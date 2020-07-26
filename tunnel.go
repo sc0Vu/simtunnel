@@ -1,6 +1,7 @@
 package simtunnel
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"strconv"
@@ -8,26 +9,19 @@ import (
 )
 
 const (
-	localhost  = "localhost"
-	bufferSize = 1024
+	localhost = "localhost"
+)
+
+var (
+	ErrCopyEmptyBuffer = fmt.Errorf("copy empty buffer")
 )
 
 func (tunnel *Tunnel) netCopy(input, output net.Conn) (err error) {
-	buf := make([]byte, bufferSize)
-	for {
-		count, err := input.Read(buf)
-		if err != nil {
-			if err == io.EOF && count > 0 {
-				output.Write(buf[:count])
-			}
-			break
-		}
-		if count > 0 {
-			_, err := output.Write(buf[:count])
-			if err != nil {
-				break
-			}
-		}
+	var count int64
+	count, err = io.Copy(output, input)
+	if err == nil && count < 0 {
+		err = ErrCopyEmptyBuffer
+		return
 	}
 	return
 }
