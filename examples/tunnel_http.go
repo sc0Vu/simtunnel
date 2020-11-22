@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/sc0vu/simtunnel"
 )
@@ -12,7 +13,7 @@ import (
 func main() {
 	localPort := 9999
 	forwardPort := 8080
-	tunnel := simtunnel.NewTunnel()
+	tunnel := simtunnel.NewTunnel(10 * time.Millisecond)
 	go func() {
 		err := tunnel.ListenAndServe(localPort, "localhost", forwardPort)
 		if err != nil && err != simtunnel.ErrClosedListener {

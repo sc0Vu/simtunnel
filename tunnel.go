@@ -33,13 +33,15 @@ type Tunnel struct {
 	srcAddr     string
 	forwardAddr string
 	srcListener net.Listener
+	sleepTime   time.Duration
 	od          sync.Once
 	ch          chan struct{}
 }
 
 // NewTunnel returns tunnel
-func NewTunnel() (tunnel Tunnel) {
+func NewTunnel(sleepTime time.Duration) (tunnel Tunnel) {
 	tunnel.ch = make(chan struct{})
+	tunnel.sleepTime = sleepTime
 	return
 }
 
@@ -53,14 +55,14 @@ func (tunnel *Tunnel) serveLn(ln net.Listener, forwardAddr string) (err error) {
 				return
 			}
 			if ne, ok := err.(net.Error); ok && ne.Temporary() {
-				sleepTime := 10 * time.Millisecond
-				time.Sleep(sleepTime)
+				time.Sleep(tunnel.sleepTime)
 			}
 			continue
 		}
 		forwardConn, err = net.Dial("tcp", forwardAddr)
 		if err != nil {
-			return
+			conn.Close()
+			continue
 		}
 		go func() {
 			go tunnel.netCopy(conn, forwardConn)

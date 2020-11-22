@@ -58,7 +58,7 @@ func getHTTP(addr string) ([]byte, error) {
 
 func TestTunneling(t *testing.T) {
 	for _, v := range tunnelTests {
-		tunnel := NewTunnel()
+		tunnel := NewTunnel(10 * time.Millisecond)
 		go func() {
 			if err := tunnel.ListenAndServe(v.SrcPort, v.ForwardHost, v.ForwardPort); err != nil && err != ErrClosedListener {
 				t.Errorf("failed to listen and serve the tunnel: %s\n", err.Error())
