@@ -58,11 +58,12 @@ func getHTTP(addr string) ([]byte, error) {
 
 func TestTunneling(t *testing.T) {
 	for _, v := range tunnelTests {
-		tunnel := NewTunnel(v.SrcPort, v.ForwardHost, v.ForwardPort)
-		err := tunnel.ListenAndServe()
-		if err != nil {
-			t.Errorf("failed to listen and serve the tunnel: %s\n", err.Error())
-		}
+		tunnel := NewTunnel()
+		go func() {
+			if err := tunnel.ListenAndServe(v.SrcPort, v.ForwardHost, v.ForwardPort); err != nil && err != ErrClosedListener {
+				t.Errorf("failed to listen and serve the tunnel: %s\n", err.Error())
+			}
+		}()
 		protocol := "http"
 		if v.secure {
 			protocol = fmt.Sprintf("%ss", protocol)
