@@ -31,5 +31,4 @@ func main() {
 	}
 	tunnel.Close()
 	log.Printf("Close tunnel")
-	return
 }
