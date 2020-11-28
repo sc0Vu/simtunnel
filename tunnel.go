@@ -32,16 +32,20 @@ func (tunnel *Tunnel) netCopy(input, output net.Conn) (err error) {
 type Tunnel struct {
 	srcAddr     string
 	forwardAddr string
+	connsSize   int
 	srcListener net.Listener
 	sleepTime   time.Duration
+	forwardConns map[net.Conn]net.Conn
 	od          sync.Once
 	ch          chan struct{}
 }
 
 // NewTunnel returns tunnel
-func NewTunnel(sleepTime time.Duration) (tunnel Tunnel) {
+func NewTunnel(sleepTime time.Duration, connsSize int) (tunnel Tunnel) {
 	tunnel.ch = make(chan struct{})
 	tunnel.sleepTime = sleepTime
+	tunnel.connsSize = connsSize
+	tunnel.forwardConns = make(map[net.Conn]net.Conn, connsSize)
 	return
 }
 
@@ -64,11 +68,14 @@ func (tunnel *Tunnel) serveLn(ln net.Listener, forwardAddr string) (err error) {
 			conn.Close()
 			continue
 		}
+		// keep connections
+		tunnel.forwardConns[conn] = conn
 		go func() {
 			go tunnel.netCopy(conn, forwardConn)
 			tunnel.netCopy(forwardConn, conn)
 			forwardConn.Close()
 			conn.Close()
+			delete(tunnel.forwardConns, forwardConn)
 		}()
 	}
 }
@@ -106,6 +113,10 @@ func (tunnel *Tunnel) Close() {
 		close(tunnel.ch)
 		if tunnel.srcListener != nil {
 			tunnel.srcListener.Close()
+		}
+		// close all unclosed connections
+		for _, c := range tunnel.forwardConns {
+			c.Close()
 		}
 	})
 }

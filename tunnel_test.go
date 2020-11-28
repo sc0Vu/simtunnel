@@ -40,7 +40,7 @@ func getHTTP(addr string) ([]byte, error) {
 		},
 		ForceAttemptHTTP2:     true,
 		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
+		IdleConnTimeout:       10 * time.Second,
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 	}
@@ -58,7 +58,7 @@ func getHTTP(addr string) ([]byte, error) {
 
 func TestTunneling(t *testing.T) {
 	for _, v := range tunnelTests {
-		tunnel := NewTunnel(10 * time.Millisecond)
+		tunnel := NewTunnel(10 * time.Millisecond, 1024)
 		go func() {
 			if err := tunnel.ListenAndServe(v.SrcPort, v.ForwardHost, v.ForwardPort); err != nil && err != ErrClosedListener {
 				t.Errorf("failed to listen and serve the tunnel: %s\n", err.Error())
@@ -66,7 +66,7 @@ func TestTunneling(t *testing.T) {
 		}()
 		protocol := "http"
 		if v.secure {
-			protocol = fmt.Sprintf("%ss", protocol)
+			protocol = "https"
 		}
 		tunAddr := fmt.Sprintf("%s://localhost:%d", protocol, v.SrcPort)
 		resFromTun, err := getHTTP(tunAddr)
@@ -76,11 +76,6 @@ func TestTunneling(t *testing.T) {
 		if len(resFromTun) <= 0 {
 			t.Errorf("failed to fetch from tunnel\n")
 		}
-		// forwardAddr := fmt.Sprintf("%s://%s:%d", protocol, v.ForwardHost, v.ForwardPort)
-		// resFromForward, err := getHTTP(forwardAddr)
-		// if err != nil {
-		// 	t.Errorf("failed to GET from forward connection: %s\n", err.Error())
-		// }
 		tunnel.Close()
 	}
 }

@@ -13,7 +13,7 @@ import (
 func main() {
 	localPort := 9999
 	forwardPort := 8080
-	tunnel := simtunnel.NewTunnel(10 * time.Millisecond)
+	tunnel := simtunnel.NewTunnel(10 * time.Millisecond, 1024)
 	go func() {
 		err := tunnel.ListenAndServe(localPort, "localhost", forwardPort)
 		if err != nil && err != simtunnel.ErrClosedListener {
