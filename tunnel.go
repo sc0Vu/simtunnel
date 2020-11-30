@@ -30,14 +30,14 @@ func (tunnel *Tunnel) netCopy(input, output net.Conn) (err error) {
 
 // Tunnel struct
 type Tunnel struct {
-	srcAddr     string
-	forwardAddr string
-	connsSize   int
-	srcListener net.Listener
-	sleepTime   time.Duration
+	srcAddr      string
+	forwardAddr  string
+	connsSize    int
+	srcListener  net.Listener
+	sleepTime    time.Duration
 	forwardConns map[net.Conn]net.Conn
-	od          sync.Once
-	ch          chan struct{}
+	od           sync.Once
+	ch           chan struct{}
 }
 
 // NewTunnel returns tunnel
@@ -71,6 +71,12 @@ func (tunnel *Tunnel) serveLn(ln net.Listener, forwardAddr string) (err error) {
 		// keep connections
 		tunnel.forwardConns[conn] = conn
 		go func() {
+			// recover
+			defer func() {
+				if err := recover(); err != nil {
+					fmt.Printf("panic: tls-alpn solver handler: %v\n", err)
+				}
+			}()
 			go tunnel.netCopy(conn, forwardConn)
 			tunnel.netCopy(forwardConn, conn)
 			forwardConn.Close()
