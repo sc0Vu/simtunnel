@@ -77,8 +77,17 @@ func (tunnel *Tunnel) serveLn(ln net.Listener, forwardAddr string) (err error) {
 					fmt.Printf("panic: tls-alpn solver handler: %v\n", err)
 				}
 			}()
-			go tunnel.netCopy(conn, forwardConn)
-			tunnel.netCopy(forwardConn, conn)
+			var wg sync.WaitGroup
+			wg.Add(2)
+			go func() {
+				_ = tunnel.netCopy(conn, forwardConn)
+				wg.Done()
+			}()
+			go func() {
+				_ = tunnel.netCopy(forwardConn, conn)
+				wg.Done()
+			}()
+			wg.Wait()
 			forwardConn.Close()
 			conn.Close()
 			delete(tunnel.forwardConns, forwardConn)
