@@ -38,6 +38,7 @@ type Tunnel struct {
 	forwardConns map[net.Conn]net.Conn
 	od           sync.Once
 	ch           chan struct{}
+	mx           sync.Mutex
 }
 
 // NewTunnel returns tunnel
@@ -69,7 +70,9 @@ func (tunnel *Tunnel) serveLn(ln net.Listener, forwardAddr string) (err error) {
 			continue
 		}
 		// keep connections
+		tunnel.mx.Lock()
 		tunnel.forwardConns[conn] = conn
+		tunnel.mx.Unlock()
 		go func() {
 			// recover
 			defer func() {
@@ -130,8 +133,10 @@ func (tunnel *Tunnel) Close() {
 	tunnel.od.Do(func() {
 		close(tunnel.ch)
 		// close all unclosed connections
+		tunnel.mx.Lock()
 		for _, c := range tunnel.forwardConns {
 			c.Close()
 		}
+		tunnel.mx.Unlock()
 	})
 }
