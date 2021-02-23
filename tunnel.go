@@ -109,6 +109,9 @@ func (tunnel *Tunnel) ListenAndServe(srcPort int, forwardHost string, forwardPor
 	if err != nil {
 		return
 	}
+	defer func() {
+		tunnel.srcListener.Close()
+	}()
 	return tunnel.serveLn(tunnel.srcListener, tunnel.forwardAddr)
 }
 
@@ -126,9 +129,6 @@ func (tunnel *Tunnel) Closed() bool {
 func (tunnel *Tunnel) Close() {
 	tunnel.od.Do(func() {
 		close(tunnel.ch)
-		if tunnel.srcListener != nil {
-			tunnel.srcListener.Close()
-		}
 		// close all unclosed connections
 		for _, c := range tunnel.forwardConns {
 			c.Close()
